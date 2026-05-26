@@ -17,16 +17,14 @@ DEFAULT_TICKERS: list[str] = (
     else ["AAPL", "TSLA", "NVDA"]
 )
 
-# ── Market indices — shown as a compact overview above your stock panels ─────
-# Keys are Yahoo Finance symbols; values are short display names.
-# Add/remove entries here or set MARKET_INDICES=^GSPC,^DJI in .env to override.
+# ── Market indices ────────────────────────────────────────────────────────
 _env_indices = os.getenv("MARKET_INDICES", "")
 MARKET_INDICES: dict[str, str] = {}
 if _env_indices:
-    for sym in _env_indices.split(","):
-        sym = sym.strip().upper()
-        if sym:
-            MARKET_INDICES[sym] = sym   # name filled in later from API
+    for _sym in _env_indices.split(","):
+        _sym = _sym.strip().upper()
+        if _sym:
+            MARKET_INDICES[_sym] = _sym
 else:
     MARKET_INDICES = {
         "^GSPC": "S&P 500",
@@ -35,9 +33,26 @@ else:
         "^RUT":  "Russell 2000",
     }
 
-# ── Ticker → full company name (used for Google News search queries) ───────
+# ── Sector ETFs ─────────────────────────────────────────────────────────────
+SECTOR_ETFS: dict[str, str] = {
+    "XLK":  "Technology",
+    "XLF":  "Financials",
+    "XLE":  "Energy",
+    "XLV":  "Health Care",
+    "XLI":  "Industrials",
+    "XLC":  "Comm. Services",
+    "XLY":  "Cons. Discret.",
+    "XLP":  "Cons. Staples",
+    "XLRE": "Real Estate",
+    "XLU":  "Utilities",
+    "XLB":  "Materials",
+}
+
+# ── Price alerts ─────────────────────────────────────────────────────────────
+ALERTS_RAW: str = os.getenv("ALERTS", "")
+
+# ── Ticker → company name ───────────────────────────────────────────────────────
 COMPANY_NAMES: dict[str, str] = {
-    # Stocks
     "AAPL":  "Apple",
     "TSLA":  "Tesla",
     "NVDA":  "Nvidia",
@@ -54,7 +69,6 @@ COMPANY_NAMES: dict[str, str] = {
     "GS":    "Goldman Sachs",
     "V":     "Visa",
     "MA":    "Mastercard",
-    # Indices (used when an index is added to the stock watchlist)
     "^GSPC": "S&P 500",
     "^DJI":  "Dow Jones",
     "^IXIC": "NASDAQ Composite",
@@ -62,16 +76,15 @@ COMPANY_NAMES: dict[str, str] = {
 }
 
 def company_name(ticker: str) -> str:
-    """Return the company/index name for a ticker, falling back to the ticker itself."""
     return COMPANY_NAMES.get(ticker.upper(), ticker.upper())
 
 # ── API keys ───────────────────────────────────────────────────────────────
 NEWSAPI_KEY: str = os.getenv("NEWSAPI_KEY", "")
 
 # ── Fetch settings ─────────────────────────────────────────────────────────
-NEWSAPI_PAGE_SIZE:    int = 5   # headlines per ticker from NewsAPI
-YAHOO_MAX_ITEMS:      int = 5   # headlines per ticker from Google News
-REQUEST_TIMEOUT:      int = 10  # seconds
+NEWSAPI_PAGE_SIZE:    int = 5
+YAHOO_MAX_ITEMS:      int = 5
+REQUEST_TIMEOUT:      int = 10
 
-# ── Watch / auto-refresh settings ─────────────────────────────────────────
+# ── Watch / auto-refresh ─────────────────────────────────────────────────────
 WATCH_INTERVAL_MINUTES: int = int(os.getenv("WATCH_INTERVAL", "30"))

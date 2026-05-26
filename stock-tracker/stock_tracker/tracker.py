@@ -8,12 +8,13 @@ import time
 from typing import List
 
 from stock_tracker import config, display
+from stock_tracker import alerts as alert_mod
 from stock_tracker.sources import google_news, newsapi
 from stock_tracker.sources.google_news import Article
 from stock_tracker.sources.prices import fetch_batch
 
+_alerts = alert_mod.parse(config.ALERTS_RAW)
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _deduplicate(articles: List[Article]) -> List[Article]:
     seen:   set[str]      = set()
@@ -34,12 +35,10 @@ def _sort(articles: List[Article]) -> List[Article]:
     )
 
 
-# ── Core run ────────────────────────────────────────────────────────────────
-
-def run(tickers: list[str] | None = None,
-        watch_mode:       bool = False,
-        interval_minutes: int  = config.WATCH_INTERVAL_MINUTES,
-        show_markets:     bool = True) -> None:
+def run(tickers:          list[str] | None = None,
+        watch_mode:       bool             = False,
+        interval_minutes: int              = config.WATCH_INTERVAL_MINUTES,
+        show_markets:     bool             = True) -> None:
     tickers = tickers or config.DEFAULT_TICKERS
     start   = time.monotonic()
     total   = 0
@@ -50,52 +49,56 @@ def run(tickers: list[str] | None = None,
     if not config.NEWSAPI_KEY:
         display.print_no_key_warning()
 
-    all_symbols = list(config.MARKET_INDICES.keys()) + tickers
-    prices = fetch_batch(all_symbols) if show_markets else fetch_batch(tickers)
+    all_syms: list[str] = []
+    if show_markets:
+        all_syms += list(config.MARKET_INDICES.keys())
+        all_syms += list(config.SECTOR_ETFS.keys())
+    all_syms += tickers
+    all_syms += [a.ticker for a in _alerts]
+    all_syms  = list(dict.fromkeys(all_syms))
 
-    if show_markets and config.MARKET_INDICES:
-        display.print_market_overview(config.MARKET_INDICES, prices)
+    prices = fetch_batch(all_syms)
+
+    triggered = alert_mod.check(_alerts, prices)
+    if triggered:
+        display.print_alerts(triggered)
+
+    if show_markets:
+        if config.MARKET_INDICES:
+            display.print_market_overview(config.MARKET_INDICES, prices)
+        if config.SECTOR_ETFS:
+            display.print_sector_overview(config.SECTOR_ETFS, prices)
 
     for ticker in tickers:
         company  = config.company_name(ticker)
         articles: List[Article] = []
-
         articles += google_news.fetch(ticker, company)
-
         try:
             articles += newsapi.fetch(ticker, company)
         except RuntimeError as exc:
             display.print_error(str(exc))
-
         articles = _sort(_deduplicate(articles))
         total   += len(articles)
-
         display.print_ticker_news(ticker, articles, price=prices.get(ticker))
 
     display.print_summary(total, time.monotonic() - start)
 
-
-# ── Watch / auto-refresh loop ───────────────────────────────────────────────────
 
 def watch(tickers:          list[str] | None = None,
          interval_minutes: int              = config.WATCH_INTERVAL_MINUTES,
          show_markets:     bool             = True) -> None:
     tickers          = tickers or config.DEFAULT_TICKERS
     interval_seconds = interval_minutes * 60
-
     try:
         while True:
             display.console.clear()
             run(tickers, watch_mode=True,
                 interval_minutes=interval_minutes,
                 show_markets=show_markets)
-
             for remaining in range(interval_seconds, 0, -1):
                 display.print_countdown(remaining)
                 time.sleep(1)
-
             display.clear_countdown()
-
     except KeyboardInterrupt:
         display.clear_countdown()
         display.console.print("\n[dim]Watch mode stopped.[/dim]\n")
