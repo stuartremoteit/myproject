@@ -8,12 +8,11 @@ Set NEWSAPI_KEY in your .env file.
 from __future__ import annotations
 
 import requests
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List
 
 from stock_tracker.config import NEWSAPI_KEY, NEWSAPI_PAGE_SIZE, REQUEST_TIMEOUT
-from stock_tracker.sources.yahoo import Article  # reuse the same dataclass
+from stock_tracker.sources.google_news import Article  # shared Article dataclass
 
 
 _ENDPOINT = "https://newsapi.org/v2/everything"
@@ -23,7 +22,6 @@ def _parse_date(iso: str | None) -> datetime | None:
     if not iso:
         return None
     try:
-        # NewsAPI returns e.g. "2024-01-15T12:34:56Z"
         return datetime.fromisoformat(iso.replace("Z", "+00:00"))
     except Exception:
         return None
@@ -40,9 +38,8 @@ def fetch(ticker: str, company: str) -> List[Article]:
     if not NEWSAPI_KEY:
         return []
 
-    query = f'"{ticker}" OR "{company}"'
     params = {
-        "q":        query,
+        "q":        f'"{ticker}" OR "{company}"',
         "apiKey":   NEWSAPI_KEY,
         "pageSize": NEWSAPI_PAGE_SIZE,
         "sortBy":   "publishedAt",
@@ -68,7 +65,6 @@ def fetch(ticker: str, company: str) -> List[Article]:
         return articles
 
     except requests.HTTPError as exc:
-        # Surface key errors so the user knows to fix their .env
         if exc.response is not None and exc.response.status_code == 401:
             raise RuntimeError(
                 "NewsAPI returned 401 Unauthorized — check your NEWSAPI_KEY in .env"

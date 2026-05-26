@@ -14,13 +14,13 @@ from rich.table import Table
 from rich.text import Text
 from rich import box
 
-from stock_tracker.sources.yahoo import Article
+from stock_tracker.sources.google_news import Article
 from stock_tracker.sources.prices import PriceData, fmt_volume, fmt_market_cap
 
 console = Console()
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _age(dt: datetime | None) -> str:
     """Return a human-friendly age string like '2h ago' or 'just now'."""
@@ -121,12 +121,12 @@ def print_ticker_news(ticker: str, articles: List[Article],
         padding=(0, 1),
     )
     table.add_column("Age",    style="dim cyan",  no_wrap=True, width=9)
-    table.add_column("Source", style="dim green", no_wrap=True, width=16)
+    table.add_column("Source", style="dim green", no_wrap=True, width=18)
     table.add_column("Headline")
 
     for art in articles:
         age  = _age(art.published)
-        src  = (art.source or "—")[:15]
+        src  = (art.source or "—")[:17]
         link = f"[link={art.url}]{art.title}[/link]" if art.url else art.title
         table.add_row(age, src, link)
 

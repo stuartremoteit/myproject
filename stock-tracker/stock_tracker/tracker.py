@@ -8,9 +8,9 @@ import time
 from typing import List
 
 from stock_tracker import config, display
-from stock_tracker.sources import yahoo, newsapi
+from stock_tracker.sources import google_news, newsapi
+from stock_tracker.sources.google_news import Article
 from stock_tracker.sources.prices import fetch_batch
-from stock_tracker.sources.yahoo import Article
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -62,10 +62,10 @@ def run(tickers: list[str] | None = None,
         company  = config.company_name(ticker)
         articles: List[Article] = []
 
-        # Yahoo Finance RSS ──────────────────────────────────────────────
-        articles += yahoo.fetch(ticker)
+        # ── Google News RSS ───────────────────────────────────────────────
+        articles += google_news.fetch(ticker, company)
 
-        # NewsAPI.org ───────────────────────────────────────────────────
+        # ── NewsAPI.org ───────────────────────────────────────────────────
         try:
             articles += newsapi.fetch(ticker, company)
         except RuntimeError as exc:
@@ -99,7 +99,6 @@ def watch(tickers: list[str] | None = None,
             display.console.clear()
             run(tickers, watch_mode=True, interval_minutes=interval_minutes)
 
-            # ── countdown ───────────────────────────────────────────────────
             for remaining in range(interval_seconds, 0, -1):
                 display.print_countdown(remaining)
                 time.sleep(1)
