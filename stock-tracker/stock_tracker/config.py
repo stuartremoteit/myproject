@@ -45,6 +45,9 @@ def company_name(ticker: str) -> str:
 NEWSAPI_KEY: str = os.getenv("NEWSAPI_KEY", "")
 
 # ── Fetch settings ─────────────────────────────────────────────────────────
-NEWSAPI_PAGE_SIZE: int = 5      # headlines per ticker from NewsAPI
-YAHOO_MAX_ITEMS:   int = 5      # headlines per ticker from Yahoo RSS
-REQUEST_TIMEOUT:   int = 10     # seconds
+NEWSAPI_PAGE_SIZE:    int = 5   # headlines per ticker from NewsAPI
+YAHOO_MAX_ITEMS:      int = 5   # headlines per ticker from Yahoo RSS
+REQUEST_TIMEOUT:      int = 10  # seconds
+
+# ── Watch / auto-refresh settings ─────────────────────────────────────────
+WATCH_INTERVAL_MINUTES: int = int(os.getenv("WATCH_INTERVAL", "30"))
